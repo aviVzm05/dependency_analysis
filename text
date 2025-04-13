@@ -1,0 +1,1 @@
+pip install langchain langchain-openai openai duckdb pandas graphviz chromadb streamlit python-dotenv

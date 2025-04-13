@@ -1,0 +1,62 @@
+classDiagram
+    class JobAnalyzer {
+        -db_path
+        -knowledge_dir
+        -db_conn
+        -vector_store
+        -ollama_model
+        -ollama_host
+        -llm
+        +setup()
+        +close()
+        +get_job_dependencies(job_name)
+        +get_job_parent_child_relations(job_name)
+        +get_job_criticality(job_name)
+        +search_knowledge_articles(query)
+        +generate_dependency_graph(job_name, depth)
+    }
+    
+    class AgentExecutor {
+        -agent
+        -tools
+        -verbose
+        +invoke(inputs)
+    }
+    
+    class StreamlitUI {
+        +create_streamlit_app()
+    }
+    
+    class CLI {
+        +cli()
+    }
+    
+    class DatabaseConnector {
+        +connect()
+        +execute_query()
+    }
+    
+    class VectorStoreManager {
+        +initialize()
+        +search()
+    }
+    
+    class GraphGenerator {
+        +create_graph()
+        +render()
+    }
+    
+    class OllamaLLM {
+        -model
+        -base_url
+        +generate()
+    }
+    
+    JobAnalyzer --> DatabaseConnector : uses
+    JobAnalyzer --> VectorStoreManager : uses
+    JobAnalyzer --> GraphGenerator : uses
+    JobAnalyzer --> OllamaLLM : uses
+    
+    AgentExecutor --> JobAnalyzer : uses tools from
+    StreamlitUI --> AgentExecutor : creates and invokes
+    CLI --> AgentExecutor : creates and invokes

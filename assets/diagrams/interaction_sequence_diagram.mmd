@@ -1,0 +1,44 @@
+sequenceDiagram
+    actor User
+    participant UI as Streamlit UI
+    participant Agent as AI Agent
+    participant Analyzer as Job Analyzer
+    participant LLM as Ollama LLM
+    participant DB as DuckDB
+    participant KB as Knowledge Base
+    participant Graph as GraphViz
+
+    User->>UI: Enter job query
+    UI->>Agent: Forward query
+    Agent->>LLM: Process query
+    LLM-->>Agent: Determine tools needed
+    
+    loop Tool Selection
+        Agent->>Analyzer: Call appropriate tool
+        
+        alt Get Dependencies
+            Analyzer->>DB: Query mainframe_deps
+            DB-->>Analyzer: Return job dependencies
+        else Get Criticality
+            Analyzer->>DB: Query mainframe_critical_jobs
+            DB-->>Analyzer: Return job criticality
+        else Get Parent-Child
+            Analyzer->>DB: Query adjacency_list
+            DB-->>Analyzer: Return relationships
+        else Search Knowledge
+            Analyzer->>KB: Query knowledge articles
+            KB-->>Analyzer: Return relevant info
+        else Generate Graph
+            Analyzer->>DB: Query dependencies
+            DB-->>Analyzer: Return relationships
+            Analyzer->>Graph: Generate visualization
+            Graph-->>Analyzer: Return graph path
+        end
+        
+        Analyzer-->>Agent: Return tool results
+    end
+    
+    Agent->>LLM: Format comprehensive answer
+    LLM-->>Agent: Generate final response
+    Agent-->>UI: Return formatted response
+    UI-->>User: Display response with any visuals

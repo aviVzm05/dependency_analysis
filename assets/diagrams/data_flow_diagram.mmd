@@ -1,0 +1,31 @@
+data_flow_diagram.mmd
+flowchart LR
+    User([User]) --> |Query| UI[Streamlit UI]
+    UI --> |Forward Query| Agent[AI Agent]
+    
+    subgraph Input Processing
+        Agent --> |Parse Request| LLM[Ollama LLM]
+        LLM --> |Tool Selection| Agent
+    end
+    
+    subgraph Data Retrieval
+        Agent --> |Invoke Tools| Tools[Tool Collection]
+        Tools --> |Database Query| DB[(DuckDB)]
+        Tools --> |Vector Search| KB[(Knowledge Base)]
+        Tools --> |Graph Request| GraphViz[GraphViz Engine]
+    end
+    
+    subgraph Response Generation
+        Tools --> |Tool Results| Agent
+        Agent --> |Format Request| LLM
+        LLM --> |Generated Response| Agent
+        Agent --> |Final Answer| UI
+    end
+    
+    UI --> |Response & Visuals| User
+    
+    style User fill:#f96,stroke:#333,stroke-width:2px
+    style UI fill:#bbf,stroke:#33f,stroke-width:2px
+    style Input fill:#dcf,stroke:#93c,stroke-width:1px
+    style Data fill:#bfb,stroke:#3b3,stroke-width:1px
+    style Response fill:#fdb,stroke:#b62,stroke-width:1px

@@ -1,0 +1,44 @@
+flowchart TD
+    subgraph Client Machine
+        Browser[Web Browser]
+    end
+    
+    subgraph Application Server
+        WebApp[Streamlit App]
+        PythonRuntime[Python Runtime]
+        JobAnalyzer[Job Analyzer Module]
+        LangChain[LangChain Framework]
+    end
+    
+    subgraph Data Layer
+        DuckDB[(DuckDB Database)]
+        ChromaDB[(ChromaDB Vector Store)]
+        FileSystem[File System\nKnowledge Articles\nGraphs]
+    end
+    
+    subgraph LLM Server
+        Ollama[Ollama Service]
+        LLMModels[LLM Models\nLlama3, Mistral, etc.]
+    end
+    
+    Browser <--> WebApp
+    WebApp --> PythonRuntime
+    PythonRuntime --> JobAnalyzer
+    JobAnalyzer --> LangChain
+    
+    JobAnalyzer --> DuckDB
+    JobAnalyzer --> ChromaDB
+    JobAnalyzer --> FileSystem
+    
+    LangChain <--> Ollama
+    Ollama --> LLMModels
+    
+    classDef client fill:#f9f,stroke:#333,stroke-width:2px;
+    classDef app fill:#bbf,stroke:#33f,stroke-width:2px;
+    classDef data fill:#bfb,stroke:#3b3,stroke-width:2px;
+    classDef llm fill:#fdb,stroke:#b62,stroke-width:2px;
+    
+    class Browser client;
+    class WebApp,PythonRuntime,JobAnalyzer,LangChain app;
+    class DuckDB,ChromaDB,FileSystem data;
+    class Ollama,LLMModels llm;
