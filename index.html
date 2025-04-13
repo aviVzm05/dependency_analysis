@@ -65,22 +65,198 @@ layout: default
 
             <h3>Component Diagram</h3>
             <div class="mermaid">
-                {{ include('assets/diagrams/component_diagram.mmd') }}
+                classDiagram
+                    class JobAnalyzer {
+                        -db_path
+                        -knowledge_dir
+                        -db_conn
+                        -vector_store
+                        -ollama_model
+                        -ollama_host
+                        -llm
+                        +setup()
+                        +close()
+                        +get_job_dependencies(job_name)
+                        +get_job_parent_child_relations(job_name)
+                        +get_job_criticality(job_name)
+                        +search_knowledge_articles(query)
+                        +generate_dependency_graph(job_name, depth)
+                    }
+                    
+                    class AgentExecutor {
+                        -agent
+                        -tools
+                        -verbose
+                        +invoke(inputs)
+                    }
+                    
+                    class StreamlitUI {
+                        +create_streamlit_app()
+                    }
+                    
+                    class CLI {
+                        +cli()
+                    }
+                    
+                    class DatabaseConnector {
+                        +connect()
+                        +execute_query()
+                    }
+                    
+                    class VectorStoreManager {
+                        +initialize()
+                        +search()
+                    }
+                    
+                    class GraphGenerator {
+                        +create_graph()
+                        +render()
+                    }
+                    
+                    class OllamaLLM {
+                        -model
+                        -base_url
+                        +generate()
+                    }
+                    
+                    JobAnalyzer --> DatabaseConnector : uses
+                    JobAnalyzer --> VectorStoreManager : uses
+                    JobAnalyzer --> GraphGenerator : uses
+                    JobAnalyzer --> OllamaLLM : uses
+                    
+                    AgentExecutor --> JobAnalyzer : uses tools from
+                    StreamlitUI --> AgentExecutor : creates and invokes
+                    CLI --> AgentExecutor : creates and invokes
             </div>
 
             <h3>Data Flow Diagram</h3>
             <div class="mermaid">
-                {{ include('assets/diagrams/data_flow_diagram.mmd') }}
+                flowchart LR
+                    User([User]) --> |Query| UI[Streamlit UI]
+                    UI --> |Forward Query| Agent[AI Agent]
+                    
+                    subgraph Input Processing
+                        Agent --> |Parse Request| LLM[Ollama LLM]
+                        LLM --> |Tool Selection| Agent
+                    end
+                    
+                    subgraph Data Retrieval
+                        Agent --> |Invoke Tools| Tools[Tool Collection]
+                        Tools --> |Database Query| DB[(DuckDB)]
+                        Tools --> |Vector Search| KB[(Knowledge Base)]
+                        Tools --> |Graph Request| GraphViz[GraphViz Engine]
+                    end
+                    
+                    subgraph Response Generation
+                        Tools --> |Tool Results| Agent
+                        Agent --> |Format Request| LLM
+                        LLM --> |Generated Response| Agent
+                        Agent --> |Final Answer| UI
+                    end
+                    
+                    UI --> |Response & Visuals| User
+                    
+                    style User fill:#f96,stroke:#333,stroke-width:2px
+                    style UI fill:#bbf,stroke:#33f,stroke-width:2px
+                    style Input fill:#dcf,stroke:#93c,stroke-width:1px
+                    style Data fill:#bfb,stroke:#3b3,stroke-width:1px
+                    style Response fill:#fdb,stroke:#b62,stroke-width:1px
             </div>
 
             <h3>Deployment Diagram</h3>
             <div class="mermaid">
-                {{ include('assets/diagrams/deployment_diagram.mmd') }}
+                flowchart TD
+                    subgraph Client Machine
+                        Browser[Web Browser]
+                    end
+                    
+                    subgraph Application Server
+                        WebApp[Streamlit App]
+                        PythonRuntime[Python Runtime]
+                        JobAnalyzer[Job Analyzer Module]
+                        LangChain[LangChain Framework]
+                    end
+                    
+                    subgraph Data Layer
+                        DuckDB[(DuckDB Database)]
+                        ChromaDB[(ChromaDB Vector Store)]
+                        FileSystem[File System\nKnowledge Articles\nGraphs]
+                    end
+                    
+                    subgraph LLM Server
+                        Ollama[Ollama Service]
+                        LLMModels[LLM Models\nLlama3, Mistral, etc.]
+                    end
+                    
+                    Browser <--> WebApp
+                    WebApp --> PythonRuntime
+                    PythonRuntime --> JobAnalyzer
+                    JobAnalyzer --> LangChain
+                    
+                    JobAnalyzer --> DuckDB
+                    JobAnalyzer --> ChromaDB
+                    JobAnalyzer --> FileSystem
+                    
+                    LangChain <--> Ollama
+                    Ollama --> LLMModels
+                    
+                    classDef client fill:#f9f,stroke:#333,stroke-width:2px;
+                    classDef app fill:#bbf,stroke:#33f,stroke-width:2px;
+                    classDef data fill:#bfb,stroke:#3b3,stroke-width:2px;
+                    classDef llm fill:#fdb,stroke:#b62,stroke-width:2px;
+                    
+                    class Browser client;
+                    class WebApp,PythonRuntime,JobAnalyzer,LangChain app;
+                    class DuckDB,ChromaDB,FileSystem data;
+                    class Ollama,LLMModels llm;
             </div>
 
             <h3>Interaction Sequence Diagram</h3>
             <div class="mermaid">
-                {{ include('assets/diagrams/interaction_sequence_diagram.mmd') }}
+                sequenceDiagram
+                    actor User
+                    participant UI as Streamlit UI
+                    participant Agent as AI Agent
+                    participant Analyzer as Job Analyzer
+                    participant LLM as Ollama LLM
+                    participant DB as DuckDB
+                    participant KB as Knowledge Base
+                    participant Graph as GraphViz
+
+                    User->>UI: Enter job query
+                    UI->>Agent: Forward query
+                    Agent->>LLM: Process query
+                    LLM-->>Agent: Determine tools needed
+                    
+                    loop Tool Selection
+                        Agent->>Analyzer: Call appropriate tool
+                        
+                        alt Get Dependencies
+                            Analyzer->>DB: Query mainframe_deps
+                            DB-->>Analyzer: Return job dependencies
+                        else Get Criticality
+                            Analyzer->>DB: Query mainframe_critical_jobs
+                            DB-->>Analyzer: Return job criticality
+                        else Get Parent-Child
+                            Analyzer->>DB: Query adjacency_list
+                            DB-->>Analyzer: Return relationships
+                        else Search Knowledge
+                            Analyzer->>KB: Query knowledge articles
+                            KB-->>Analyzer: Return relevant info
+                        else Generate Graph
+                            Analyzer->>DB: Query dependencies
+                            DB-->>Analyzer: Return relationships
+                            Analyzer->>Graph: Generate visualization
+                            Graph-->>Analyzer: Return graph path
+                        end
+                        
+                        Analyzer-->>Agent: Return tool results
+                    end
+                    
+                    Agent->>LLM: Format comprehensive answer
+                    LLM-->>Agent: Generate final response
+                    Agent-->>UI: Return formatted response
+                    UI-->>User: Display response with any visuals
             </div>
         </section>
     </main>
