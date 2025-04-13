@@ -7,7 +7,7 @@ layout: default
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Job Analyzer Project</title>
-    <link rel="stylesheet" href="assets/styles.css">
+    <link rel="stylesheet" href="./assets/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
     <script>
         mermaid.initialize({ startOnLoad: true });
@@ -24,7 +24,7 @@ layout: default
             <h2>Diagrams</h2>
             <h3>Application Architecture Diagram</h3>
             <div class="mermaid">
-                {{ include('assets/diagrams/application_architecture_diagram.mmd') }}
+                {{ include('./assets/diagrams/application_architecture_diagram.mmd') }}
             </div>
 
             <h3>Component Diagram</h3>
