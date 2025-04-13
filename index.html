@@ -24,7 +24,43 @@ layout: default
             <h2>Diagrams</h2>
             <h3>Application Architecture Diagram</h3>
             <div class="mermaid">
-                {{ include('./assets/diagrams/application_architecture_diagram.mmd') }}
+            flowchart TD
+                User[User] <--> WebUI[Streamlit Web Interface]
+                WebUI <--> Agent[AI Agent]
+                
+                subgraph "Core Components"
+                    Agent <--> JobAnalyzer[Job Analyzer]
+                    JobAnalyzer <--> Tools[Tool Collection]
+                end
+                
+                subgraph "Data Sources"
+                    Tools <--> DB[(DuckDB Database)]
+                    Tools <--> KB[(Knowledge Base)]
+                    Tools <--> GraphViz[GraphViz Engine]
+                end
+                
+                subgraph "Database Tables"
+                    DB --> Deps[Mainframe_deps]
+                    DB --> Adj[Adjacency_list]
+                    DB --> Critical[Mainframe_critical_jobs]
+                end
+                
+                subgraph "LLM Engine"
+                    Agent <--> LLM[Ollama LLM]
+                    KB <--> Embeddings[Ollama Embeddings]
+                end
+                
+                classDef user fill:#f9f,stroke:#333,stroke-width:2px;
+                classDef ui fill:#bbf,stroke:#33f,stroke-width:2px;
+                classDef core fill:#bfb,stroke:#3b3,stroke-width:2px;
+                classDef data fill:#fdb,stroke:#b62,stroke-width:2px;
+                classDef llm fill:#dcf,stroke:#93c,stroke-width:2px;
+                
+                class User user;
+                class WebUI ui;
+                class Agent,JobAnalyzer,Tools core;
+                class DB,KB,GraphViz,Deps,Adj,Critical data;
+                class LLM,Embeddings llm;
             </div>
 
             <h3>Component Diagram</h3>
