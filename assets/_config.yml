@@ -1,0 +1,9 @@
+remote_theme: pages-themes/cayman@v0.2.0
+plugins:
+- jekyll-remote-theme
+title: Job Analysis Application Documentation
+description: Architecture diagrams and documentation
+markdown: kramdown
+kramdown:
+  syntax_highlighter_opts:
+    disable: true
