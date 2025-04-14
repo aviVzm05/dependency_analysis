@@ -22,7 +22,7 @@ load_dotenv()
 # Initialize Ollama settings
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")  # Default to llama3 if not specified
 OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")  # Default to local Ollama
-DB_PATH = os.getenv("DUCKDB_PATH", "jobs_database.db")
+DB_PATH = os.path.join("database", "jobs_database.db")
 
 class JobAnalyzer:
     def __init__(self, db_path=DB_PATH, knowledge_dir="knowledge_articles/", 
@@ -278,33 +278,55 @@ def create_agent(job_analyzer):
         )
     ]
     
-    # Create prompt with ReAct framework for better tool-use with Ollama models
+    # Create prompt with ReAct framework
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """You are an AI assistant specialized in analyzing mainframe jobs, their dependencies, and business impacts.
-Your goal is to help users understand job relationships, critical paths, and how to troubleshoot issues.
+        ("system", """You are an AI assistant specialized in analyzing mainframe jobs.
 
-Use the available tools to retrieve information from the database and knowledge articles.
-Always follow these steps:
-1. Identify what information the user is requesting about jobs
-2. Use appropriate tools to gather that information
-3. Combine the information into a clear, concise response
-4. If applicable, suggest generating a dependency graph
+For non-job queries like greetings, IMMEDIATELY respond with a simple greeting.
+Example: If user says "hello", just respond "Hello! How can I help you analyze mainframe jobs today?"
 
-Work through this step-by-step:
-1. Think about what tools you need to answer the question
-2. Call the tools with the appropriate parameters
-3. Analyze the results from the tools
-4. Formulate a comprehensive answer
+For job-related queries, you MUST follow this EXACT format:
+Thought: [brief thought about what to do next]
+Action: [name of the tool to use]
+Action Input: [exact input for the tool]
+Observation: [wait for tool response]
+Thought: [brief thought about the result and what to do next]
+... (repeat if needed)
+Final Answer: [summarize findings for the user]
 
-Format your response in a structured way but use natural language.
-"""),
-        ("human", "{input}"),
-        MessagesPlaceholder(variable_name="agent_scratchpad"),
+Example format for job query:
+Thought: I need to check job dependencies first
+Action: get_job_dependencies
+Action Input: "JOB123"
+Observation: [tool response]                    
+Thought: Now I need to check criticality
+Action: get_job_criticality
+Action Input: "JOB123"
+Observation: [tool response]
+Final Answer: Based on the analysis, JOB123...
+
+Available tools:
+{tools}
+
+Tool Names: {tool_names}"""),
+        ("user", "{input}"),
+        ("assistant", "{agent_scratchpad}")
     ])
     
-    # Create agent with ReAct formatting which works better for Ollama models
-    agent = create_react_agent(job_analyzer.llm, tools, prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True, handle_parsing_errors=True)
+    # Create agent with ReAct formatting
+    agent = create_react_agent(
+        llm=job_analyzer.llm, 
+        tools=tools, 
+        prompt=prompt,
+    )
+    
+    agent_executor = AgentExecutor(
+        agent=agent, 
+        tools=tools, 
+        verbose=True, 
+        handle_parsing_errors=True,
+        max_iterations=3
+    )
     
     return agent_executor
 
@@ -318,7 +340,7 @@ def create_streamlit_app():
         st.header("Configuration")
         model = st.selectbox(
             "Select Ollama Model", 
-            ["llama3", "mistral", "llama2", "llama3:8b", "codellama", "phi3"], 
+            ["llama3", "mistral", "llama2", "llama3:8b", "codellama", "phi3", "deepseek-r1:1.5b"], 
             index=0
         )
         ollama_url = st.text_input("Ollama URL", value="http://localhost:11434")
@@ -390,7 +412,8 @@ def cli():
 # Main entry point
 if __name__ == "__main__":
     # Check if running in Streamlit
-    if 'STREAMLIT_RUN_ENV' in os.environ:
-        create_streamlit_app()
-    else:
-        cli()
+    # print(f"{os.environ=}")
+    # if 'STREAMLIT_RUN_ENV' in os.environ:
+    create_streamlit_app()
+    # else:
+        # cli()
