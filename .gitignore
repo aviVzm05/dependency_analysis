@@ -62,6 +62,7 @@ build/
 wheels/
 *.whl
 .venv/
+.env
 
 # GitHub Pages specific files #
 ###############################
@@ -75,3 +76,5 @@ _site/
 data/*
 knowledge_articles/*
 database/*
+chroma_db/*
+graphs/*

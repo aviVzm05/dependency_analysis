@@ -32,28 +32,32 @@ layout: default
             <h3>Application Architecture Diagram</h3>
             <div class="mermaid">
             flowchart TD
-                User[User] <--> WebUI[Streamlit Web Interface]
+                User[User] <--> WebUI[Streamlit UI]
                 WebUI <--> Agent[AI Agent]
                 
                 subgraph "Core Components"
                     Agent <--> JobAnalyzer[Job Analyzer]
                     JobAnalyzer <--> Tools[Tool Collection]
+                    Tools --> Dependencies[get_job_dependencies]
+                    Tools --> Criticality[get_job_criticality]
+                    Tools --> Search[search_knowledge_articles]
+                    Tools --> Graph[generate_dependency_graph]
                 end
                 
                 subgraph "Data Sources"
-                    Tools <--> DB[(DuckDB Database)]
-                    Tools <--> KB[(Knowledge Base)]
-                    Tools <--> GraphViz[GraphViz Engine]
+                    Dependencies --> DB[(DuckDB)]
+                    Criticality --> DB
+                    Search --> KB[(Knowledge Base)]
+                    Graph --> DB
+                    Graph --> GraphViz[GraphViz Engine]
                 end
                 
-                subgraph "Database Tables"
-                    DB --> Deps[Mainframe_deps]
-                    DB --> Adj[Adjacency_list]
-                    DB --> Critical[Mainframe_critical_jobs]
+                subgraph "Database Schema"
+                    DB --> MainframeDeps[mainframe_deps<br/>job_name<br/>predecessor_job<br/>successor_job<br/>file_trigger<br/>is_critical]
                 end
                 
                 subgraph "LLM Engine"
-                    Agent <--> LLM[Ollama LLM]
+                    Agent <--> LLM[Ollama/Gemini LLM]
                     KB <--> Embeddings[Ollama Embeddings]
                 end
                 
@@ -65,8 +69,8 @@ layout: default
                 
                 class User user;
                 class WebUI ui;
-                class Agent,JobAnalyzer,Tools core;
-                class DB,KB,GraphViz,Deps,Adj,Critical data;
+                class Agent,JobAnalyzer,Tools,Dependencies,Criticality,Search,Graph core;
+                class DB,KB,GraphViz,MainframeDeps data;
                 class LLM,Embeddings llm;
             </div>
 
@@ -74,68 +78,63 @@ layout: default
             <div class="mermaid">
                 classDiagram
                     class JobAnalyzer {
-                        -db_path
-                        -knowledge_dir
-                        -db_conn
-                        -vector_store
-                        -ollama_model
-                        -ollama_host
-                        -llm
+                        -db_path: str
+                        -knowledge_dir: str
+                        -db_conn: DuckDB
+                        -vector_store: Chroma
+                        -ollama_model: str
+                        -ollama_host: str
+                        -llm: Ollama/Gemini
                         +setup()
                         +close()
-                        +get_job_dependencies(job_name)
-                        +get_job_parent_child_relations(job_name)
-                        +get_job_criticality(job_name)
-                        +search_knowledge_articles(query)
-                        +generate_dependency_graph(job_name, depth)
+                        +greet_user(name: str)
+                        +get_job_dependencies(job_name: str)
+                        +get_job_criticality(job_name: str)
+                        +search_knowledge_articles(query: str)
+                        +generate_dependency_graph(job_name: str, depth: int)
+                        +show_dependency_graph(job_name: str)
                     }
                     
                     class AgentExecutor {
-                        -agent
-                        -tools
-                        -verbose
-                        +invoke(inputs)
+                        -agent: ReAct
+                        -tools: List[Tool]
+                        -verbose: bool
+                        +invoke(inputs: dict)
                     }
                     
                     class StreamlitUI {
+                        +messages: List
                         +create_streamlit_app()
                     }
                     
-                    class CLI {
-                        +cli()
-                    }
-                    
                     class DatabaseConnector {
-                        +connect()
-                        +execute_query()
+                        +job_name: str
+                        +predecessor_job: str
+                        +successor_job: str
+                        +file_trigger: str
+                        +is_critical: str
                     }
                     
                     class VectorStoreManager {
-                        +initialize()
-                        +search()
+                        +collection_name: str
+                        +embedding_function: OllamaEmbeddings
+                        +persist_directory: str
                     }
                     
                     class GraphGenerator {
-                        +create_graph()
-                        +render()
-                    }
-                    
-                    class OllamaLLM {
-                        -model
-                        -base_url
-                        +generate()
+                        +format: str
+                        +direction: str
+                        +engine: str
                     }
                     
                     JobAnalyzer --> DatabaseConnector : uses
                     JobAnalyzer --> VectorStoreManager : uses
                     JobAnalyzer --> GraphGenerator : uses
-                    JobAnalyzer --> OllamaLLM : uses
                     
                     AgentExecutor --> JobAnalyzer : uses tools from
                     StreamlitUI --> AgentExecutor : creates and invokes
-                    CLI --> AgentExecutor : creates and invokes
             </div>
-
+            
             <h3>Data Flow Diagram</h3>
             <div class="mermaid">
                 flowchart LR
@@ -143,127 +142,79 @@ layout: default
                     UI --> |Forward Query| Agent[AI Agent]
                     
                     subgraph Input Processing
-                        Agent --> |Parse Request| LLM[Ollama LLM]
+                        Agent --> |Parse Request| LLM[Ollama/Gemini LLM]
                         LLM --> |Tool Selection| Agent
                     end
                     
                     subgraph Data Retrieval
-                        Agent --> |Invoke Tools| Tools[Tool Collection]
-                        Tools --> |Database Query| DB[(DuckDB)]
-                        Tools --> |Vector Search| KB[(Knowledge Base)]
-                        Tools --> |Graph Request| GraphViz[GraphViz Engine]
+                        Agent --> |Job Query| DB[(DuckDB)]
+                        Agent --> |Knowledge Query| KB[(Chroma KB)]
+                        Agent --> |Graph Request| GraphViz[GraphViz]
+                        
+                        DB --> |Dependencies| Agent
+                        KB --> |Articles| Agent
+                        GraphViz --> |PNG Image| Agent
                     end
                     
                     subgraph Response Generation
-                        Tools --> |Tool Results| Agent
                         Agent --> |Format Request| LLM
                         LLM --> |Generated Response| Agent
-                        Agent --> |Final Answer| UI
+                        Agent --> |Text Response| UI
+                        Agent --> |Graph Visual| UI
                     end
                     
-                    UI --> |Response & Visuals| User
+                    UI --> |Display| User
                     
                     style User fill:#f96,stroke:#333,stroke-width:2px
                     style UI fill:#bbf,stroke:#33f,stroke-width:2px
-                    style Input fill:#dcf,stroke:#93c,stroke-width:1px
-                    style Data fill:#bfb,stroke:#3b3,stroke-width:1px
-                    style Response fill:#fdb,stroke:#b62,stroke-width:1px
             </div>
 
             <h3>Deployment Diagram</h3>
             <div class="mermaid">
                 flowchart TD
-                    subgraph Client Machine
+                    subgraph Client
                         Browser[Web Browser]
                     end
                     
-                    subgraph Application Server
-                        WebApp[Streamlit App]
-                        PythonRuntime[Python Runtime]
-                        JobAnalyzer[Job Analyzer Module]
-                        LangChain[LangChain Framework]
+                    subgraph Application
+                        Streamlit[Streamlit App]
+                        Python[Python 3.x]
+                        JobAnalyzer[Job Analyzer]
+                        LangChain[LangChain]
                     end
                     
-                    subgraph Data Layer
-                        DuckDB[(DuckDB Database)]
-                        ChromaDB[(ChromaDB Vector Store)]
-                        FileSystem[File System\nKnowledge Articles\nGraphs]
+                    subgraph Storage
+                        DuckDB[(DuckDB)]
+                        ChromaDB[(ChromaDB)]
+                        GraphViz[GraphViz]
                     end
                     
-                    subgraph LLM Server
+                    subgraph Models
                         Ollama[Ollama Service]
-                        LLMModels[LLM Models\nLlama3, Mistral, etc.]
+                        Gemini[Google Gemini]
                     end
                     
-                    Browser <--> WebApp
-                    WebApp --> PythonRuntime
-                    PythonRuntime --> JobAnalyzer
+                    Browser <--> Streamlit
+                    Streamlit --> Python
+                    Python --> JobAnalyzer
                     JobAnalyzer --> LangChain
                     
                     JobAnalyzer --> DuckDB
                     JobAnalyzer --> ChromaDB
-                    JobAnalyzer --> FileSystem
+                    JobAnalyzer --> GraphViz
                     
                     LangChain <--> Ollama
-                    Ollama --> LLMModels
+                    LangChain <--> Gemini
                     
                     classDef client fill:#f9f,stroke:#333,stroke-width:2px;
                     classDef app fill:#bbf,stroke:#33f,stroke-width:2px;
-                    classDef data fill:#bfb,stroke:#3b3,stroke-width:2px;
-                    classDef llm fill:#fdb,stroke:#b62,stroke-width:2px;
+                    classDef storage fill:#bfb,stroke:#3b3,stroke-width:2px;
+                    classDef models fill:#fdb,stroke:#b62,stroke-width:2px;
                     
                     class Browser client;
-                    class WebApp,PythonRuntime,JobAnalyzer,LangChain app;
-                    class DuckDB,ChromaDB,FileSystem data;
-                    class Ollama,LLMModels llm;
-            </div>
-
-            <h3>Interaction Sequence Diagram</h3>
-            <div class="mermaid">
-                sequenceDiagram
-                    actor User
-                    participant UI as Streamlit UI
-                    participant Agent as AI Agent
-                    participant Analyzer as Job Analyzer
-                    participant LLM as Ollama LLM
-                    participant DB as DuckDB
-                    participant KB as Knowledge Base
-                    participant Graph as GraphViz
-
-                    User->>UI: Enter job query
-                    UI->>Agent: Forward query
-                    Agent->>LLM: Process query
-                    LLM-->>Agent: Determine tools needed
-                    
-                    loop Tool Selection
-                        Agent->>Analyzer: Call appropriate tool
-                        
-                        alt Get Dependencies
-                            Analyzer->>DB: Query mainframe_deps
-                            DB-->>Analyzer: Return job dependencies
-                        else Get Criticality
-                            Analyzer->>DB: Query mainframe_critical_jobs
-                            DB-->>Analyzer: Return job criticality
-                        else Get Parent-Child
-                            Analyzer->>DB: Query adjacency_list
-                            DB-->>Analyzer: Return relationships
-                        else Search Knowledge
-                            Analyzer->>KB: Query knowledge articles
-                            KB-->>Analyzer: Return relevant info
-                        else Generate Graph
-                            Analyzer->>DB: Query dependencies
-                            DB-->>Analyzer: Return relationships
-                            Analyzer->>Graph: Generate visualization
-                            Graph-->>Analyzer: Return graph path
-                        end
-                        
-                        Analyzer-->>Agent: Return tool results
-                    end
-                    
-                    Agent->>LLM: Format comprehensive answer
-                    LLM-->>Agent: Generate final response
-                    Agent-->>UI: Return formatted response
-                    UI-->>User: Display response with any visuals
+                    class Streamlit,Python,JobAnalyzer,LangChain app;
+                    class DuckDB,ChromaDB,GraphViz storage;
+                    class Ollama,Gemini models;
             </div>
         </section>
     </main>
