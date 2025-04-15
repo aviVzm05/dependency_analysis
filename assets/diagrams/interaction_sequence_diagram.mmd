@@ -3,42 +3,51 @@ sequenceDiagram
     participant UI as Streamlit UI
     participant Agent as AI Agent
     participant Analyzer as Job Analyzer
-    participant LLM as Ollama LLM
+    participant LLM as Ollama/Gemini LLM
     participant DB as DuckDB
-    participant KB as Knowledge Base
+    participant KB as Chroma KB
     participant Graph as GraphViz
 
-    User->>UI: Enter job query
-    UI->>Agent: Forward query
-    Agent->>LLM: Process query
-    LLM-->>Agent: Determine tools needed
+    Note over UI: Configuration options:<br/>- Model selection<br/>- Ollama/Gemini switch
     
-    loop Tool Selection
-        Agent->>Analyzer: Call appropriate tool
+    User->>UI: Enter query/greeting
+    UI->>Agent: Forward input
+    
+    alt Greeting
+        Agent->>Analyzer: Call greet_user
+        Analyzer-->>Agent: Return greeting
+    else Job Query
+        Agent->>LLM: Process query
+        LLM-->>Agent: Determine tools needed
         
-        alt Get Dependencies
-            Analyzer->>DB: Query mainframe_deps
-            DB-->>Analyzer: Return job dependencies
-        else Get Criticality
-            Analyzer->>DB: Query mainframe_critical_jobs
-            DB-->>Analyzer: Return job criticality
-        else Get Parent-Child
-            Analyzer->>DB: Query adjacency_list
-            DB-->>Analyzer: Return relationships
-        else Search Knowledge
-            Analyzer->>KB: Query knowledge articles
-            KB-->>Analyzer: Return relevant info
-        else Generate Graph
-            Analyzer->>DB: Query dependencies
-            DB-->>Analyzer: Return relationships
-            Analyzer->>Graph: Generate visualization
-            Graph-->>Analyzer: Return graph path
+        loop Tool Selection
+            Agent->>Analyzer: Call appropriate tool
+            
+            alt Get Criticality
+                Analyzer->>DB: Query mainframe_deps
+                DB-->>Analyzer: Return is_critical status
+            else Get Dependencies
+                Analyzer->>DB: Query mainframe_deps
+                DB-->>Analyzer: Return predecessors/successors
+            else Search Knowledge
+                Analyzer->>KB: Query vector store
+                KB-->>Analyzer: Return relevant articles
+                Analyzer->>LLM: Compress/extract context
+                LLM-->>Analyzer: Return formatted results
+            else Generate Graph
+                Analyzer->>DB: Query dependencies
+                DB-->>Analyzer: Return relationships
+                Analyzer->>Graph: Generate visualization
+                Graph-->>Analyzer: Save graph as PNG
+                Analyzer->>UI: Display graph image
+            end
+            
+            Analyzer-->>Agent: Return tool results
         end
         
-        Analyzer-->>Agent: Return tool results
+        Agent->>LLM: Format comprehensive answer
+        LLM-->>Agent: Generate final response
     end
     
-    Agent->>LLM: Format comprehensive answer
-    LLM-->>Agent: Generate final response
     Agent-->>UI: Return formatted response
-    UI-->>User: Display response with any visuals
+    UI-->>User: Display response with visuals

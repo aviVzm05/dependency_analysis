@@ -3,28 +3,28 @@ flowchart LR
     UI --> |Forward Query| Agent[AI Agent]
     
     subgraph Input Processing
-        Agent --> |Parse Request| LLM[Ollama LLM]
+        Agent --> |Parse Request| LLM[Ollama/Gemini LLM]
         LLM --> |Tool Selection| Agent
     end
     
     subgraph Data Retrieval
-        Agent --> |Invoke Tools| Tools[Tool Collection]
-        Tools --> |Database Query| DB[(DuckDB)]
-        Tools --> |Vector Search| KB[(Knowledge Base)]
-        Tools --> |Graph Request| GraphViz[GraphViz Engine]
+        Agent --> |Job Query| DB[(DuckDB)]
+        Agent --> |Knowledge Query| KB[(Chroma KB)]
+        Agent --> |Graph Request| GraphViz[GraphViz]
+        
+        DB --> |Dependencies| Agent
+        KB --> |Articles| Agent
+        GraphViz --> |PNG Image| Agent
     end
     
     subgraph Response Generation
-        Tools --> |Tool Results| Agent
         Agent --> |Format Request| LLM
         LLM --> |Generated Response| Agent
-        Agent --> |Final Answer| UI
+        Agent --> |Text Response| UI
+        Agent --> |Graph Visual| UI
     end
     
-    UI --> |Response & Visuals| User
+    UI --> |Display| User
     
     style User fill:#f96,stroke:#333,stroke-width:2px
     style UI fill:#bbf,stroke:#33f,stroke-width:2px
-    style Input fill:#dcf,stroke:#93c,stroke-width:1px
-    style Data fill:#bfb,stroke:#3b3,stroke-width:1px
-    style Response fill:#fdb,stroke:#b62,stroke-width:1px

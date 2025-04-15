@@ -216,6 +216,64 @@ layout: default
                     class DuckDB,ChromaDB,GraphViz storage;
                     class Ollama,Gemini models;
             </div>
+
+            
+            <h3>Interaction sequence Diagram</h3>
+            <div class="mermaid">
+                sequenceDiagram
+                    actor User
+                    participant UI as Streamlit UI
+                    participant Agent as AI Agent
+                    participant Analyzer as Job Analyzer
+                    participant LLM as Ollama/Gemini LLM
+                    participant DB as DuckDB
+                    participant KB as Chroma KB
+                    participant Graph as GraphViz
+
+                    Note over UI: Configuration options:<br/>- Model selection<br/>- Ollama/Gemini switch
+                    
+                    User->>UI: Enter query/greeting
+                    UI->>Agent: Forward input
+                    
+                    alt Greeting
+                        Agent->>Analyzer: Call greet_user
+                        Analyzer-->>Agent: Return greeting
+                    else Job Query
+                        Agent->>LLM: Process query
+                        LLM-->>Agent: Determine tools needed
+                        
+                        loop Tool Selection
+                            Agent->>Analyzer: Call appropriate tool
+                            
+                            alt Get Criticality
+                                Analyzer->>DB: Query mainframe_deps
+                                DB-->>Analyzer: Return is_critical status
+                            else Get Dependencies
+                                Analyzer->>DB: Query mainframe_deps
+                                DB-->>Analyzer: Return predecessors/successors
+                            else Search Knowledge
+                                Analyzer->>KB: Query vector store
+                                KB-->>Analyzer: Return relevant articles
+                                Analyzer->>LLM: Compress/extract context
+                                LLM-->>Analyzer: Return formatted results
+                            else Generate Graph
+                                Analyzer->>DB: Query dependencies
+                                DB-->>Analyzer: Return relationships
+                                Analyzer->>Graph: Generate visualization
+                                Graph-->>Analyzer: Save graph as PNG
+                                Analyzer->>UI: Display graph image
+                            end
+                            
+                            Analyzer-->>Agent: Return tool results
+                        end
+                        
+                        Agent->>LLM: Format comprehensive answer
+                        LLM-->>Agent: Generate final response
+                    end
+                    
+                    Agent-->>UI: Return formatted response
+                    UI-->>User: Display response with visuals
+            </div>
         </section>
     </main>
 

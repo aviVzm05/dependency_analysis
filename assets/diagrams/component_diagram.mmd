@@ -1,62 +1,57 @@
 classDiagram
     class JobAnalyzer {
-        -db_path
-        -knowledge_dir
-        -db_conn
-        -vector_store
-        -ollama_model
-        -ollama_host
-        -llm
+        -db_path: str
+        -knowledge_dir: str
+        -db_conn: DuckDB
+        -vector_store: Chroma
+        -ollama_model: str
+        -ollama_host: str
+        -llm: Ollama/Gemini
         +setup()
         +close()
-        +get_job_dependencies(job_name)
-        +get_job_parent_child_relations(job_name)
-        +get_job_criticality(job_name)
-        +search_knowledge_articles(query)
-        +generate_dependency_graph(job_name, depth)
+        +greet_user(name: str)
+        +get_job_dependencies(job_name: str)
+        +get_job_criticality(job_name: str)
+        +search_knowledge_articles(query: str)
+        +generate_dependency_graph(job_name: str, depth: int)
+        +show_dependency_graph(job_name: str)
     }
     
     class AgentExecutor {
-        -agent
-        -tools
-        -verbose
-        +invoke(inputs)
+        -agent: ReAct
+        -tools: List[Tool]
+        -verbose: bool
+        +invoke(inputs: dict)
     }
     
     class StreamlitUI {
+        +messages: List
         +create_streamlit_app()
     }
     
-    class CLI {
-        +cli()
-    }
-    
     class DatabaseConnector {
-        +connect()
-        +execute_query()
+        +job_name: str
+        +predecessor_job: str
+        +successor_job: str
+        +file_trigger: str
+        +is_critical: str
     }
     
     class VectorStoreManager {
-        +initialize()
-        +search()
+        +collection_name: str
+        +embedding_function: OllamaEmbeddings
+        +persist_directory: str
     }
     
     class GraphGenerator {
-        +create_graph()
-        +render()
-    }
-    
-    class OllamaLLM {
-        -model
-        -base_url
-        +generate()
+        +format: str
+        +direction: str
+        +engine: str
     }
     
     JobAnalyzer --> DatabaseConnector : uses
     JobAnalyzer --> VectorStoreManager : uses
     JobAnalyzer --> GraphGenerator : uses
-    JobAnalyzer --> OllamaLLM : uses
     
     AgentExecutor --> JobAnalyzer : uses tools from
     StreamlitUI --> AgentExecutor : creates and invokes
-    CLI --> AgentExecutor : creates and invokes

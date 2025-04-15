@@ -1,26 +1,30 @@
 flowchart TD
-    User[User] <--> WebUI[Streamlit Web Interface]
+    User[User] <--> WebUI[Streamlit UI]
     WebUI <--> Agent[AI Agent]
     
     subgraph "Core Components"
         Agent <--> JobAnalyzer[Job Analyzer]
         JobAnalyzer <--> Tools[Tool Collection]
+        Tools --> Dependencies[get_job_dependencies]
+        Tools --> Criticality[get_job_criticality]
+        Tools --> Search[search_knowledge_articles]
+        Tools --> Graph[generate_dependency_graph]
     end
     
     subgraph "Data Sources"
-        Tools <--> DB[(DuckDB Database)]
-        Tools <--> KB[(Knowledge Base)]
-        Tools <--> GraphViz[GraphViz Engine]
+        Dependencies --> DB[(DuckDB)]
+        Criticality --> DB
+        Search --> KB[(Knowledge Base)]
+        Graph --> DB
+        Graph --> GraphViz[GraphViz Engine]
     end
     
-    subgraph "Database Tables"
-        DB --> Deps[Mainframe_deps]
-        DB --> Adj[Adjacency_list]
-        DB --> Critical[Mainframe_critical_jobs]
+    subgraph "Database Schema"
+        DB --> MainframeDeps[mainframe_deps<br/>job_name<br/>predecessor_job<br/>successor_job<br/>file_trigger<br/>is_critical]
     end
     
     subgraph "LLM Engine"
-        Agent <--> LLM[Ollama LLM]
+        Agent <--> LLM[Ollama/Gemini LLM]
         KB <--> Embeddings[Ollama Embeddings]
     end
     
@@ -32,6 +36,6 @@ flowchart TD
     
     class User user;
     class WebUI ui;
-    class Agent,JobAnalyzer,Tools core;
-    class DB,KB,GraphViz,Deps,Adj,Critical data;
+    class Agent,JobAnalyzer,Tools,Dependencies,Criticality,Search,Graph core;
+    class DB,KB,GraphViz,MainframeDeps data;
     class LLM,Embeddings llm;
