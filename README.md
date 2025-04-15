@@ -47,6 +47,9 @@ To set up the GitHub Pages site for the Job Analyzer project, follow these steps
 - View of thinking of LLM
   ![LLM Thoughts](assets/images/thoughts.png)
 
+- Knowledge Articles search
+  ![Knowledge Search](assets/images/knowledge.png)
+
 ## Contributing
 Contributions to the Job Analyzer project are welcome! Please feel free to submit issues or pull requests for any enhancements or bug fixes.
 
