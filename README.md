@@ -36,6 +36,17 @@ To set up the GitHub Pages site for the Job Analyzer project, follow these steps
 3. Open `index.html` in a web browser to view the site.
 4. Github Pages site is deployed as well [here](https://avivzm05.github.io/dependency_analysis/)
 
+
+# Screenshots
+- Initial Page and select "Google Gemini" Model
+  ![Initial Job Analyzer Page](assets/images/initial_page.png)
+
+- Start communicating with the LLM and ask it what we need.
+  ![Discussion with Gemini](assets/images/Query.png)
+  
+- View of thinking of LLM
+  ![LLM Thoughts](assets/images/thoughts.png)
+
 ## Contributing
 Contributions to the Job Analyzer project are welcome! Please feel free to submit issues or pull requests for any enhancements or bug fixes.
 
