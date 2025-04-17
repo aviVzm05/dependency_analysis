@@ -1,4 +1,4 @@
-import os
+import os,time
 import json
 import duckdb
 import pandas as pd
@@ -19,6 +19,7 @@ from langchain.schema import Document  # Add this import at the top
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage,SystemMessage
 import streamlit as st
+from mainframe_funcitons import get_job_log
 
 # Add Graphviz to PATH
 os.environ["PATH"] += os.pathsep + r"C:\Program Files\Graphviz\bin"
@@ -340,7 +341,21 @@ class JobAnalyzer:
         except Exception as e:
             print(f"Error displaying graph: {e}")
             return False
+        
+    def create_standard_change(self, job_name: str) -> str:
+        """Create a new standard change record"""
+        # Generate dummy change number
+        change_number = f"CHG{int(time.time())}"
+        return change_number
 
+    def get_job_details(self, job_name: str, job_id: str) -> str:
+        """Get job log for a given job name and ID"""
+        try:
+            # Get job log content
+            log_content = get_job_log(job_name, job_id)
+            return log_content
+        except Exception as e:
+            return f"Error retrieving job log: {str(e)}"  
 
 # Create AI agent
 def create_agent(job_analyzer):
@@ -375,6 +390,16 @@ def create_agent(job_analyzer):
             name="show_dependency_graph",
             func=job_analyzer.show_dependency_graph,
             description="Once the GraphViz vizualization of the job dependencies is generated, this function should be called to display the image to the user.Input should be a job name."
+        ),
+        Tool(
+            name="create_standard_change",
+            func=job_analyzer.create_standard_change,
+            description="Create a new standard change record. Input should be the job name."
+        ),
+        Tool(
+            name="get_job_details",
+            func=job_analyzer.get_job_details,
+            description="get job log for a given job name and job id. input should be job name and job id. e.g. JOB0004, jes1234"
         )
     ]
 
