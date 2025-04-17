@@ -54,7 +54,7 @@ layout: default
                     Search --> KB[(Knowledge Base)]
                     Graph --> DB
                     Graph --> GraphViz[GraphViz Engine]
-                    JobDetails --> Mainframe[Mainframe Job Logs]
+                    JobDetails -->|Direct Query| MainframeLive[Live Mainframe]
                     Mainframe[Mainframe Job Data] -->|Weekly Refresh| DB
                     Confluence[Confluence] -->|Template Conversion| KB
                     Legacy[Legacy Runbooks] -->|Template Conversion| KB
@@ -184,6 +184,8 @@ layout: default
                         DB --> |Dependencies| Agent
                         KB --> |Articles| Agent
                         GraphViz --> |PNG Image| Agent
+                        Agent --> |Direct Job Log Query| Mainframe[Live Mainframe]
+                        Mainframe --> |Real-Time Job Details| Agent
                     end
                     
                     subgraph Response Generation
@@ -259,6 +261,7 @@ layout: default
                     participant DB as DuckDB
                     participant KB as Chroma KB
                     participant Graph as GraphViz
+                    participant MF as Live Mainframe
 
                     Note over UI: Configuration options:<br/>- Model selection<br/>- Ollama/Gemini switch
                     
@@ -296,8 +299,8 @@ layout: default
                                 Analyzer->>DB: Query mainframe_deps
                                 DB-->>Analyzer: Return change details
                             else Get Job Details
-                                Analyzer->>DB: Query mainframe_deps
-                                DB-->>Analyzer: Return job details
+                                Analyzer->>MF: Direct job log query
+                                MF-->>Analyzer: Return real-time job details
                             end
                             
                             Analyzer-->>Agent: Return tool results
