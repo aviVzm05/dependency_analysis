@@ -34,6 +34,30 @@ DB_PATH = os.path.join("database", "jobs_database.db")
 
 
 class JobAnalyzer:
+    """A class for analyzing mainframe jobs and their dependencies.
+
+    This class provides functionality to:
+    - Query job dependencies and criticality
+    - Search knowledge articles for job-related information
+    - Generate visual dependency graphs
+    - Interact with both SQL database and vector store for job analysis
+
+    Args:
+        db_path (str, optional): Path to the DuckDB database file. Defaults to DB_PATH.
+        knowledge_dir (str, optional): Directory containing knowledge articles. Defaults to "knowledge_articles/".
+        ollama_model (str, optional): Name of the Ollama model to use. Defaults to OLLAMA_MODEL.
+        ollama_host (str, optional): URL of the Ollama host. Defaults to OLLAMA_HOST.
+        ollama_true (bool, optional): Whether to use Ollama (True) or alternative models (False). Defaults to True.
+
+    Attributes:
+        db_path (str): Path to the database file
+        knowledge_dir (str): Path to knowledge articles directory
+        db_conn: DuckDB connection object
+        vector_store: Chroma vector store instance
+        ollama_model (str): Name of the current Ollama model
+        ollama_host (str): URL of the Ollama host
+        llm: Language model instance (Ollama, HuggingFace, or Google)
+    """
     def __init__(self, db_path=DB_PATH, knowledge_dir="knowledge_articles/", 
                  ollama_model=OLLAMA_MODEL, ollama_host=OLLAMA_HOST,ollama_true:bool=True):
         self.db_path = db_path
