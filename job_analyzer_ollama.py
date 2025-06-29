@@ -19,7 +19,7 @@ from langchain.schema import Document  # Add this import at the top
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.messages import HumanMessage,SystemMessage
 import streamlit as st
-from mainframe_funcitons import get_job_log
+from mainframe_funcitons import get_job_log, download_dataset
 
 # Add Graphviz to PATH
 os.environ["PATH"] += os.pathsep + r"C:\Program Files\Graphviz\bin"
@@ -129,9 +129,10 @@ class JobAnalyzer:
             print("Chroma Db not found")
             self._initialize_vector_store()
         else:
+            # print(f"{self.ollama_model=} and {self.ollama_host=} Chroma Db found")
             self.vector_store = Chroma(
                 collection_name="knowledge_articles",
-                embedding_function=OllamaEmbeddings(model=self.ollama_model, base_url=self.ollama_host),
+                embedding_function=OllamaEmbeddings(model="llama3", base_url="http://localhost:11434"),
                 persist_directory="./chroma_db"
             )
     
@@ -255,7 +256,7 @@ class JobAnalyzer:
         )
         
         # Retrieve relevant documents
-        docs = compression_retriever.get_relevant_documents(query)
+        docs = compression_retriever.invoke(query)
         
         if not docs:
             return "No relevant knowledge articles found"
@@ -348,14 +349,26 @@ class JobAnalyzer:
         change_number = f"CHG{int(time.time())}"
         return change_number
 
-    def get_job_details(self, job_name: str, job_id: str) -> str:
+    def get_job_details(self, job_name: str, job_id: str = "JES1234") -> str:
         """Get job log for a given job name and ID"""
         try:
             # Get job log content
-            log_content = get_job_log(job_name, job_id)
+            # log_content = get_job_log(job_name, job_id)
+            log_content = f"{job_name} with {job_id=} completed successfully"  # Placeholder for actual log retrieval logic
             return log_content
         except Exception as e:
             return f"Error retrieving job log: {str(e)}"  
+
+    def download_from_mainframe(self,dataset_name: str='Z10718.TEST.DATA') -> str:
+        """Download a specific dataset from mainframe"""
+        try:
+            os.makedirs("output_mainframe", exist_ok=True)
+            dataset_name = 'Z10718.TEST.DATA'
+            local_file = "output_mainframe/z10718.txt"
+            download_dataset(dataset_name, local_file)
+            return f"Successfully downloaded {dataset_name} to {local_file}"
+        except Exception as e:
+            return f"Error downloading from mainframe: {str(e)}"
 
 # Create AI agent
 def create_agent(job_analyzer):
@@ -400,6 +413,11 @@ def create_agent(job_analyzer):
             name="get_job_details",
             func=job_analyzer.get_job_details,
             description="get job log for a given job name and job id. input should be job name and job id. e.g. JOB0004, jes1234"
+        ),
+        Tool(
+            name="download_from_mainframe",
+            func=job_analyzer.download_from_mainframe,
+            description="Download a specific dataset which has information on ducks from mainframe to local file output_mainframe/z10718.txt. Input should be the dataset name."
         )
     ]
 
@@ -435,6 +453,8 @@ def create_agent(job_analyzer):
     5. ALWAYS wait for tool responses
     6. ONLY use listed tools
 
+    
+    jobname is always in upper case and ensure the job name is converted to upper case before passing it to the tools.
     Example 1 - Greeting:
     User: Hello
     Thought: The user is greeting me. I should respond with a greeting.
@@ -504,18 +524,35 @@ def create_streamlit_app():
     # Sidebar for configuration
     with st.sidebar:
         st.header("Configuration")
-        gemini = st.checkbox(label="Use Gemini")
-        if gemini:
-            ollama_true = False
-        else:
-            ollama_true = True
         
-        model = st.selectbox(
-            "Select Ollama Model", 
-            ["llama3", "mistral", "llama2", "llama3:8b", "codellama", "phi3", "deepseek-r1:1.5b"], 
-            index=0
+        # Model selection radio button
+        model_type = st.radio(
+            "Select Model Type",
+            ["Ollama", "Gemini"],
+            index=1,
+            help="Choose between Ollama's local models or Google's Gemini model"
         )
-        ollama_url = st.text_input("Ollama URL", value="http://localhost:11434")
+
+        if model_type == "Ollama":
+            ollama_true = True
+            # Ollama-specific configuration
+            model = st.selectbox(
+                "Select Ollama Model", 
+                ["llama3", "mistral", "llama2", "llama3:8b", "codellama", "phi3", "deepseek-r1:1.5b"], 
+                index=0,
+                help="Choose the Ollama model to use for analysis"
+            )
+            ollama_url = st.text_input(
+                "Ollama URL", 
+                value="http://localhost:11434",
+                help="URL where Ollama server is running"
+            )
+        else:
+            ollama_true = False
+            # Placeholder for future Gemini configuration options
+            st.info("Using Google's Gemini model for analysis")
+            model = "gemini"  # Default for Gemini
+            ollama_url = ""   # Not needed for Gemini
     
     # Initialize analyzer with selected model
     job_analyzer = JobAnalyzer(ollama_model=model, ollama_host=ollama_url,ollama_true=ollama_true)

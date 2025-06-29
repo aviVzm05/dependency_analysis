@@ -62,6 +62,7 @@ build/
 wheels/
 *.whl
 .venv/
+.venv_old/
 .env
 
 # GitHub Pages specific files #
